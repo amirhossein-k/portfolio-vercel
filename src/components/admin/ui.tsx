@@ -1,16 +1,14 @@
 "use client";
 import { useFormStatus } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { upload } from "@vercel/blob/client";
+import { useEffect, useState } from "react";
 import { Loader2, Trash2, X, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Submit({ children = "ذخیره", className }: { children?: React.ReactNode; className?: string }) {
   const { pending } = useFormStatus();
-  const uploading = useUploading();
   return (
-    <button type="submit" disabled={pending || uploading} className={cn("btn-amber", className)}>
-      {(pending || uploading) && <Loader2 size={16} className="animate-spin" />} {children}
+    <button type="submit" disabled={pending} className={cn("btn-amber", className)}>
+      {pending && <Loader2 size={16} className="animate-spin" />} {children}
     </button>
   );
 }
@@ -75,35 +73,26 @@ export function DeleteButton({ action, confirmText = "مطمئنید؟ این ک
   );
 }
 
-/* ---------- آپلود مستقیم به Vercel Blob ---------- */
-let pending = 0;
-const subs = new Set<() => void>();
-const emit = () => subs.forEach((f) => f());
-function useUploading() {
-  return useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => pending > 0, () => false);
-}
-
-async function uploadFile(file: File): Promise<string> {
-  if (file.size > 6 * 1024 * 1024) throw new Error("حجم هر تصویر حداکثر ۶ مگابایت است.");
-  pending++; emit();
-  try {
-    const safe = file.name.replace(/[^\w.-]+/g, "-").slice(-60) || "image";
-    const blob = await upload(`portfolio/${safe}`, file, { access: "public", handleUploadUrl: "/api/upload" });
-    return blob.url;
-  } finally { pending--; emit(); }
-}
-
-/** انتخاب تصویر تکی با پیش‌نمایش */
+/** انتخاب تصویر تکی */
 export function SingleImage({ label, name, current }: { label: string; name: string; current?: string | null }) {
   const [url, setUrl] = useState(current ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => setUrl(current ?? ""), [current]);
+
   async function pick(f?: File) {
     if (!f) return;
     setBusy(true); setErr("");
-    try { setUrl(await uploadFile(f)); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+    try {
+      const fd = new FormData(); fd.append("file", f);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error((await res.json()).error || "خطا در آپلود");
+      const { url: u } = await res.json();
+      setUrl(u);
+    } catch (e) { setErr((e as Error).message); }
+    finally { setBusy(false); }
   }
+
   return (
     <div>
       <span className="label">{label}</span>
@@ -135,14 +124,21 @@ export function MultiImage({ current }: { current: string[] }) {
   const sig = current.join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => setList(current), [sig]);
+
   async function pick(files: File[]) {
     setErr(""); setBusy((b) => b + files.length);
     await Promise.all(files.map(async (f) => {
-      try { const u = await uploadFile(f); setList((l) => [...l, u]); }
-      catch (e) { setErr((e as Error).message); }
+      try {
+        const fd = new FormData(); fd.append("file", f);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!res.ok) throw new Error((await res.json()).error || "خطا در آپلود");
+        const { url: u } = await res.json();
+        setList((l) => [...l, u]);
+      } catch (e) { setErr((e as Error).message); }
       finally { setBusy((b) => b - 1); }
     }));
   }
+
   return (
     <div>
       <span className="label">گالری تصاویر</span>
