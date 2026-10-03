@@ -6,7 +6,7 @@ import type { Project } from "@prisma/client";
 export function Cover({ p, className }: { p: Pick<Project, "cover" | "title">; className?: string }) {
   return p.cover ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={p.cover} alt={p.title} loading="lazy" className={cn("h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]", className)} />
+    <img src={p.cover} alt={p.title} loading="lazy" className={cn("h-full w-full object-contain transition duration-700 group-hover:scale-[1.04]", className)} />
   ) : (
     <div className={cn("relative grid h-full w-full place-items-center overflow-hidden bg-[radial-gradient(120%_120%_at_100%_0%,#2a3a22_0%,#151c16_55%)]", className)}>
       <span className="select-none text-[96px] font-black leading-none text-amber/90">{p.title.trim().charAt(0)}</span>
