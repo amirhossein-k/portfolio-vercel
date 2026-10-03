@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { cleanUrl, deleteImage } from "@/lib/upload";
+import { deleteImage } from "@/lib/upload";
 import { SESSION_COOKIE, checkPassword, createToken, SESSION_MAX_AGE } from "@/lib/auth";
 import { num, optStr, parseImages, slugify, str } from "@/lib/utils";
 
@@ -35,7 +35,7 @@ export async function saveProfile(_: FormState, fd: FormData): Promise<FormState
     const name = str(fd, "name"), title = str(fd, "title"), bio = str(fd, "bio");
     if (!name || !title || !bio) return { error: "نام، عنوان و معرفی کوتاه الزامی است." };
     const current = await prisma.profile.findUnique({ where: { id: 1 } });
-    const avatar = cleanUrl(fd.get("avatar"));
+    const avatar = String(fd.get("avatar") ?? "").trim() || null;
     if (current?.avatar && current.avatar !== avatar) await deleteImage(current.avatar);
     const data = {
       name, title, bio, avatar,
@@ -67,10 +67,10 @@ export async function saveProject(_: FormState, fd: FormData): Promise<FormState
 
     const existing = id ? await prisma.project.findUnique({ where: { id } }) : null;
 
-    const cover = cleanUrl(fd.get("cover"));
+    const cover = String(fd.get("cover") ?? "").trim() || null;
     if (existing?.cover && existing.cover !== cover) await deleteImage(existing.cover);
 
-    const images = fd.getAll("images").map(cleanUrl).filter((u): u is string => !!u);
+    const images = fd.getAll("images").map((u) => String(u).trim()).filter(Boolean);
     for (const u of parseImages(existing?.images)) if (!images.includes(u)) await deleteImage(u);
 
     const yearRaw = num(fd, "year", 0);
