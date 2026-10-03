@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")          // اتصال pooled
+  directUrl = env("DATABASE_URL_UNPOOLED") // اتصال مستقیم برای db push
+}
+
+model Profile {
+  id        Int      @id @default(1)
+  name      String
+  title     String
+  bio       String
+  about     String   @default("")
+  avatar    String?
+  location  String?
+  email     String?
+  phone     String?
+  github    String?
+  linkedin  String?
+  telegram  String?
+  resumeUrl String?
+  yearsExp  Int      @default(5)
+  available Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id       Int    @id @default(autoincrement())
+  name     String
+  category String
+  level    Int    @default(80)
+  order    Int    @default(0)
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  tagline     String
+  description String   @default("")
+  features    String   @default("") // هر خط یک ویژگی
+  tech        String   @default("") // با کاما جدا شود
+  liveUrl     String?
+  repoUrl     String?
+  cover       String?
+  images      String   @default("[]") // JSON array of urls
+  year        Int?
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Experience {
+  id          Int    @id @default(autoincrement())
+  role        String
+  company     String
+  period      String
+  description String @default("")
+  order       Int    @default(0)
+}

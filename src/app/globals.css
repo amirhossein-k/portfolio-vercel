@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+body { @apply bg-ink text-paper font-sans antialiased; font-feature-settings: "ss01"; }
+::selection { background: #d79a3a; color: #0e130f; }
+
+@layer components {
+  .wrap { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition active:scale-[.97] disabled:opacity-50; }
+  .btn-amber { @apply btn bg-amber text-ink hover:bg-[#e6ab4c]; }
+  .btn-ghost { @apply btn border border-line text-paper hover:border-amber hover:text-amber; }
+  .btn-danger { @apply btn border border-brick/40 text-brick hover:bg-brick hover:text-ink; }
+  .chip { @apply inline-flex items-center rounded-full border border-line bg-panel px-3 py-1 font-mono text-[14px] text-paper/90; }
+  .label { @apply mb-1.5 block text-[14px] font-medium text-muted; }
+  .input { @apply w-full rounded-xl border border-line bg-ink px-3.5 py-2.5 text-[16px] text-paper outline-none transition placeholder:text-muted/50 focus:border-amber focus:ring-2 focus:ring-amber/20; }
+  .card { @apply rounded-2xl border border-line bg-panel; }
+  .eyebrow { @apply font-mono text-[14px] tracking-wide text-amber; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
