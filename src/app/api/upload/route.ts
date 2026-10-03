@@ -1,25 +1,24 @@
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifyToken } from "@/lib/auth";
 import { ALLOWED_TYPES, MAX_SIZE } from "@/lib/upload";
 
-// آپلود مستقیم از مرورگر به Vercel Blob (دور زدن محدودیت ۴.۵ مگابایتی سرورلس)
-export async function POST(request: Request) {
-  const body = (await request.json()) as HandleUploadBody;
+export const runtime = "nodejs";
+
+export async function POST(req: NextRequest) {
   try {
-    const json = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async () => {
-        const cookie = request.headers.get("cookie") ?? "";
-        const token = cookie.split(/;\s*/).find((c) => c.startsWith(`${SESSION_COOKIE}=`))?.split("=")[1];
-        if (!(await verifyToken(token ? decodeURIComponent(token) : null))) throw new Error("دسترسی ندارید");
-        return { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_SIZE, addRandomSuffix: true };
-      },
-      onUploadCompleted: async () => {},
-    });
-    return NextResponse.json(json);
+    const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+    if (!(await verifyToken(cookie))) return NextResponse.json({ error: "دسترسی ندارید" }, { status: 401 });
+
+    const fd = await req.formData();
+    const file = fd.get("file") as File;
+    if (!file) return NextResponse.json({ error: "فایل ضروری است" }, { status: 400 });
+    if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: "نوع فایل قبول نیست" }, { status: 400 });
+    if (file.size > MAX_SIZE) return NextResponse.json({ error: "حجم بیش از ۶ مگابایت است" }, { status: 400 });
+
+    const blob = await put(`portfolio/${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${file.name}`, file, { access: "public" });
+    return NextResponse.json({ url: blob.url });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
